@@ -1,0 +1,78 @@
+#!/bin/bash
+ 
+#The script creates backup of Lama bin files. The archive is created only when a file has changed.
+#The change is detected by comparing the file's checksum.
+ 
+script_dir=$(dirname "$0")
+config_file="${script_dir}/config.ini"
+if [ ! -f "$config_file" ]; then
+    echo "Error: config.ini not found in the script directory."
+    exit 1
+fi
+ 
+# Function to get a configuration value from an INI file
+get_config_value() {
+    local key=$1
+    local section=$2
+    local config_file=$3
+   
+    # Use awk to parse the INI file and extract the value for the key in the given section
+    awk -F'=' -v section="[$section]" -v key="$key" '
+    $1 == section {in_section = 1}
+    in_section && $1 ~ key {print $2; exit}
+    $1 ~ /^\[.*\]$/ && $1 != section {in_section = 0}
+    ' $config_file
+}
+# Configuration
+BACKUP_DIR=$(get_config_value "arch_dir" "persistance" "$config_file")   # Directory where backups are stored
+BACKUP_DIR=$(echo $BACKUP_DIR | xargs) # Trim the whitespace
+FILE_LIST=$(get_config_value "file_list" "persistance" "$config_file")   # List of files to back up
+FILE_LIST=$(echo $FILE_LIST | xargs)
+HASH_DIR=$(get_config_value "hash_dir" "persistance" "$config_file")   # Directory to store file hashes
+HASH_DIR=$(echo $HASH_DIR | xargs)
+MAX_COPIES=$(get_config_value "max_copies" "persistance" "$config_file")   # Number of backups to keep
+MAX_COPIES=$(echo $MAX_COPIES | xargs)
+ 
+#FILE_LIST="/var/lama/archlist"  # List of files to back up
+#MAX_COPIES=30                  # Number of backups to keep
+#HASH_DIR="$BACKUP_DIR/hashes"  # Directory to store file hashes
+ 
+mkdir -p "$BACKUP_DIR" "$HASH_DIR"
+ 
+# Loop through each file in the file list
+while IFS= read -r FILE; do
+    if [ -f "$FILE" ]; then
+        # Get file basename (name without path)
+        BASENAME=$(basename "$FILE")
+ 
+        CURRENT_HASH=$(md5sum "$FILE" | awk '{print $1}')
+        HASH_FILE="$HASH_DIR/$BASENAME.hash"
+ 
+        # Check if the file has changed
+        if [ ! -f "$HASH_FILE" ] || [ "$CURRENT_HASH" != "$(cat "$HASH_FILE")" ]; then
+            # File has changed: determine the next version number
+            NEXT_VERSION=1
+            if ls $BACKUP_DIR/$BASENAME.* >/dev/null 2>&1; then
+                # Find the highest version number and increment it
+                NEXT_VERSION=$(( $(ls -1 $BACKUP_DIR/$BASENAME.* | awk -F. '{print $NF}' | sort -n | tail -1) + 1 ))
+            fi
+ 
+            # Back up the file with the next version number
+            cp "$FILE" "$BACKUP_DIR/$BASENAME.$NEXT_VERSION"
+            echo "$CURRENT_HASH" > "$HASH_FILE"
+            echo "Backed up: $FILE -> $BACKUP_DIR/$BASENAME.$NEXT_VERSION"
+ 
+            # Prune old backups for this file (retain only the last $MAX_COPIES)
+            BACKUPS=$(ls -1t "$BACKUP_DIR/$BASENAME.*" 2>/dev/null)
+            BACKUP_COUNT=$(echo "$BACKUPS" | wc -l)
+            if [ "$BACKUP_COUNT" -gt "$MAX_COPIES" ]; then
+                echo "$BACKUPS" | tail -n +"$((MAX_COPIES + 1))" | xargs -r rm -f
+                echo "Pruned old backups for $BASENAME. Retained only the latest $MAX_COPIES."
+            fi
+        else
+            echo "No changes detected for $FILE, skipping backup."
+        fi
+    else
+        echo "Warning: File $FILE does not exist, skipping."
+    fi
+done < "$FILE_LIST"
