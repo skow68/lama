@@ -1,5 +1,19 @@
+Lama jest narzędziem służącym do:
+- wykrywania nietypowych logów
+- powiadamiania administratora o nitypowym zdarzeniu.
+Ogólnym celem jest wyfiltrowanie logów ...
+- dla środowisk, które generują bardzo dużą ilość logów. Na tyle dużą, że nie da się analizować ich ręcznie. Wynikiem działania aplikacji powien być alarm, na który administrator musi zareagować. Zakładamy, że nie interesują nas logi, o których tylko warto wiedzieć.
+
 1. Drain3 links
+2. Elementy aplikacji
+- źródła logów
+Danymi wejściowymi dla aplikacji są pliki z bieżącymi logami. Powinny być one przygotowane przez serwer Syslog, taki jak np. Syslog-ng, Graylog i wiele innych. Dobrym wyborem będzie wstępne wyfiltrowanie logów pod kątem ważności (severity).
+Dzięki temu proces trenowania systemu będzie szybsza, a wyniki bardziej wiarygodne.
+- analysers
+- train tool
+- revert tool
 2. Log sources preparation
+
 3. Why separate proccess chains for different device types
 2. First train strategy
-3. Mailbox flood protection
+3. Zabezpieczenie skrzynek pocztowych 
