@@ -1,8 +1,11 @@
 ## Funkcjonalność Lama
+
 Lama jest narzędziem służącym do wykrywania nietypowych zdarzeń wykorzystującym metodę nauczania maszynowego. Źródłem informacji są logi urządzeń. Efektem działania jest alarm w postaci maila do administratora.
 **Przeznaczenie**: Dla środowisk generujących bardzo dużą ilość logów, niemożliwych do manualnej analizy.
+
 ---
-### Termin "False Positive"
+#### Termin "False Positive"
+
 W kontekście tej aplikacji termin ten oznacza alarmy, które nie informują o awarii.
 ---
 
