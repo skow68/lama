@@ -55,5 +55,5 @@ Environment=PYTHONUNBUFFERED=1
 [Install]
 WantedBy=multi-user.target
 ```
-##Schemat działania systemu
+## Schemat działania systemu
 ![Alt Text](schema.jpg)
