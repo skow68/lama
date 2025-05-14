@@ -1,19 +1,3 @@
-# Lama
-
-## Termin "False Positive"
-W kontekście tej aplikacji termin ten oznacza alarmy, które nie informują o awarii.
-
-## Dlaczego warto separować logi w zależności od producenta urządzenia?
-Każdy producent generuje logi dla swoich urządzeń według pewnego ogólnego schematu.
-
-Dzięki temu:
-- Proces uczenia przebiega sprawniej.
-- Generowana jest mniejsza ilość False Positive.
-
-**Uwaga**: Nie jest to konieczne i być może w waszym środowisku nie będzie to miało znaczenia.
-
----
-
 ## Funkcjonalność Lama
 Lama jest narzędziem służącym do:
 - Wykrywania nietypowych zdarzeń.
@@ -22,6 +6,13 @@ Lama jest narzędziem służącym do:
 **Ogólny cel**: Wyfiltrowanie logów z dużych zbiorów danych.
 
 **Przeznaczenie**: Dla środowisk generujących bardzo dużą ilość logów, niemożliwych do manualnej analizy.
+---
+## Termin "False Positive"
+W kontekście tej aplikacji termin ten oznacza alarmy, które nie informują o awarii.
+
+## Dlaczego warto separować logi w zależności od producenta urządzenia?
+Każdy producent generuje logi dla swoich urządzeń według pewnego ogólnego schematu. Dzięki temu proces uczenia przebiega sprawniej. Generowana jest również mniejsza ilość False Positive.
+**Uwaga**: Nie jest to konieczne i być może w waszym środowisku nie będzie to miało znaczenia.
 
 ---
 
