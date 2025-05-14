@@ -10,37 +10,30 @@ Lama jest narzędziem służącym do:
 ## Termin "False Positive"
 W kontekście tej aplikacji termin ten oznacza alarmy, które nie informują o awarii.
 
-## Dlaczego warto separować logi w zależności od producenta urządzenia?
-Każdy producent generuje logi dla swoich urządzeń według pewnego ogólnego schematu. Dzięki temu proces uczenia przebiega sprawniej. Generowana jest również mniejsza ilość False Positive.
-**Uwaga**: Nie jest to konieczne i być może w waszym środowisku nie będzie to miało znaczenia.
-
 ---
 
 ## Elementy aplikacji
 
 ### Źródło logów
-Danymi wejściowymi dla aplikacji są pliki z bieżącymi logami.  
-Powinny być one przygotowane przez serwer Syslog, taki jak:
-- Syslog-ng
-- Graylog
-- Inne serwery zgodne z Syslog
-
-Dobrym rozwiązaniem będzie wstępne filtrowanie logów, np. w oparciu o **severity** (poziom ważności).
+Danymi wejściowymi dla aplikacji są pliki z bieżącymi logami. Powinny być one przygotowane przez serwer Syslog, taki jak Syslog-ng, Graylog i wiele innych. Dobrym rozwiązaniem będzie wstępne filtrowanie logów, np. w oparciu o **severity** (poziom ważności). Chodzi o to, aby trafiały do analizy tylko logi na prawdę istotne. Aplikacja przewiduje, że dla każdego producenta urządzeń będziemy mieli oddzielne pliki z logami.
+# Dlaczego warto separować logi w zależności od producenta urządzenia?
+Każdy producent generuje logi dla swoich urządzeń według pewnego ogólnego schematu. Dzięki temu proces uczenia przebiega sprawniej. Generowana jest również mniejsza ilość False Positive.
+**Uwaga**: Nie jest to konieczne i być może w waszym środowisku nie będzie to miało znaczenia.
 
 ### Analizator
 Plik z bieżącymi logami (live logs), generowanymi przez serwis syslog, jest wejściem dla procesu analizatora.  
-Analizator pracuje jako serwis Linux, którego rdzeniem jest program `lama_log_analizer.py`.
+Analizator pracuje jako serwis Linux, którego rdzeniem jest program `lama_log_analizer.py`. 
 
-#### Przykład pliku konfiguracyjnego:
+#### Przykład pliku konfiguracyjnego dla logów z urządzeń Cisco:
 ```plaintext
 [Unit]
 Description=Log Processor Service
 After=network.target
 [Service]
-ExecStart=/opt/lama/log_processor.py palo
+ExecStart=/opt/lama/log_processor.py cisco
 WorkingDirectory=/opt/lama/
-User=user
-Group=user
+User=lamauser
+Group=lamauser
 Restart=on-failure
 Environment=PYTHONUNBUFFERED=1
 [Install]
