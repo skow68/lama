@@ -56,4 +56,4 @@ Environment=PYTHONUNBUFFERED=1
 WantedBy=multi-user.target
 
 ##Schemat działania systemu
-![Alt Text](chema.jpg)
+![Alt Text](schema.jpg)
