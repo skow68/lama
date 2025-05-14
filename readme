@@ -1,25 +1,43 @@
-Termin "False Positive" - w kontekście tej aplikacji termin ten oznacza alarmy, które nie informują o awarii. 
-Dlaczego warto separować logi w zależności od producenta urządzenia? Każdy producent generuje logi dla swoich urządzeń według pewnego ogólnego schematu. Obecnośc schematu, jakiegokolwiek schematu, bardzo pomaga w uczeniu maszynowym.
-Dzięki temu proces uczenia przebiega sprawniej i generowana jest mniejsza ilość False Positive. Pamiętajmy jednak, że nie jest to konieczne i być może w waszym środowisku nie będzie to miało istotnego znaczenia.
+# Lama Application Documentation
+
+## Termin "False Positive"
+W kontekście tej aplikacji termin ten oznacza alarmy, które nie informują o awarii.
+
+## Dlaczego warto separować logi w zależności od producenta urządzenia?
+Każdy producent generuje logi dla swoich urządzeń według pewnego ogólnego schematu. Obecność schematu, jakiegokolwiek, pozwala na:
+- Sprawniejsze uczenie systemu.
+- Generowanie mniejszej ilości False Positive.
+
+**Uwaga**: Nie jest to konieczne i być może w waszym środowisku nie będzie to miało znaczenia.
+
+## Funkcjonalność Lama
 Lama jest narzędziem służącym do:
-- wykrywania nietypowych zdarzeń
-- powiadamiania administratora o nietypowym zdarzeniu.
-Ogólnym celem jest wyfiltrowanie logów ...
-Aplikacja jest przeznaczona dla środowisk, które generują bardzo dużą ilość logów. Na tyle dużą, że nie da się analizować ich ręcznie. Wynikiem działania aplikacji powien być alarm, na który administrator powinien w ten czy inny sposób zareagować.
+- Wykrywania nietypowych zdarzeń.
+- Powiadamiania administratora o nietypowym zdarzeniu.
 
-1. Drain3 links
-2. Elementy aplikacji
-2.1 Źródło logów
-Danymi wejściowymi dla aplikacji są pliki z bieżącymi logami. Powinny być one przygotowane przez serwer Syslog, taki jak np. Syslog-ng, Graylog i wiele innych. Dobrym rozwiązaniem będzie wstępne wyfiltrowanie logów pod kątem ich istotności.
-Dzięki temu proces trenowania systemu będzie szybszy, a wyniki bardziej wiarygodne. W zasadzie możemy tu zastosować dowolną metodę, która pozwoli na ograniczenie logów do analizy.
-Oczywiście musimy być pewni, że przyjęta przez nas metoda nie wyeliminuje istotnych logów. Filtrowanie w oparciu o "severity" wydaje się rozsądnym rozwiązaniem.
-2.2 Analizator
-Plik z bieżącymi logami (live logs) generowanymi przez serwis syslog jest wejściem dla procesu analizatora. Analizator pracuje jako serwis linux, którego rdzeniem jest program lama_log_analizer.py.
+**Ogólny cel**: Wyfiltrowanie logów z dużych zbiorów danych.
+
+**Przeznaczenie**: Dla środowisk generujących bardzo dużą ilość logów, niemożliwych do manualnej analizy.
+
+---
+
+## Elementy aplikacji
+
+### 2.1 Źródło logów
+Danymi wejściowymi dla aplikacji są pliki z bieżącymi logami. Powinny być one przygotowane przez serwer Syslog, taki jak:
+- Syslog-ng
+- Graylog
+- Wiele innych
+
+Dobrym rozwiązaniem będzie wstępne filtrowanie logów, np. w oparciu o:
+- **Severity** (poziom ważności).
+
+### 2.2 Analizator
+Plik z bieżącymi logami (live logs), generowanymi przez serwis syslog, jest wejściem dla procesu analizatora.  
+Analizator pracuje jako serwis Linux, którego rdzeniem jest program `lama_log_analizer.py`.
+
 Przykład pliku konfiguracyjnego definiującego serwis analizujący logi generowane przez urządzenia Cisco:
-2.3 Trener systemu
 
-
-2.4 Narzędzie do odwracania revert tool
-
-3. Strategia pierwszego uruchomienia procesu trenowania
-3. Zabezpieczenie skrzynek pocztowych 
+```plaintext
+# Example configuration content here
+# Replace with real configuration if available
