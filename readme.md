@@ -42,4 +42,15 @@ Analizator pracuje jako serwis Linux, którego rdzeniem jest program `lama_log_a
 
 #### Przykład pliku konfiguracyjnego:
 ```plaintext
-# Tu można dodać przykładowy plik konfiguracyjny
+[Unit]
+Description=Log Processor Service
+After=network.target
+[Service]
+ExecStart=/opt/lama/log_processor.py palo
+WorkingDirectory=/opt/lama/
+User=user
+Group=user
+Restart=on-failure
+Environment=PYTHONUNBUFFERED=1
+[Install]
+WantedBy=multi-user.target
