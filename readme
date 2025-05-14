@@ -1,14 +1,18 @@
-# Lama Application Documentation
+# Lama
 
 ## Termin "False Positive"
 W kontekście tej aplikacji termin ten oznacza alarmy, które nie informują o awarii.
 
 ## Dlaczego warto separować logi w zależności od producenta urządzenia?
-Każdy producent generuje logi dla swoich urządzeń według pewnego ogólnego schematu. Obecność schematu, jakiegokolwiek, pozwala na:
-- Sprawniejsze uczenie systemu.
-- Generowanie mniejszej ilości False Positive.
+Każdy producent generuje logi dla swoich urządzeń według pewnego ogólnego schematu.
+
+Dzięki temu:
+- Proces uczenia przebiega sprawniej.
+- Generowana jest mniejsza ilość False Positive.
 
 **Uwaga**: Nie jest to konieczne i być może w waszym środowisku nie będzie to miało znaczenia.
+
+---
 
 ## Funkcjonalność Lama
 Lama jest narzędziem służącym do:
@@ -23,21 +27,19 @@ Lama jest narzędziem służącym do:
 
 ## Elementy aplikacji
 
-### 2.1 Źródło logów
-Danymi wejściowymi dla aplikacji są pliki z bieżącymi logami. Powinny być one przygotowane przez serwer Syslog, taki jak:
+### Źródło logów
+Danymi wejściowymi dla aplikacji są pliki z bieżącymi logami.  
+Powinny być one przygotowane przez serwer Syslog, taki jak:
 - Syslog-ng
 - Graylog
-- Wiele innych
+- Inne serwery zgodne z Syslog
 
-Dobrym rozwiązaniem będzie wstępne filtrowanie logów, np. w oparciu o:
-- **Severity** (poziom ważności).
+Dobrym rozwiązaniem będzie wstępne filtrowanie logów, np. w oparciu o **severity** (poziom ważności).
 
-### 2.2 Analizator
+### Analizator
 Plik z bieżącymi logami (live logs), generowanymi przez serwis syslog, jest wejściem dla procesu analizatora.  
 Analizator pracuje jako serwis Linux, którego rdzeniem jest program `lama_log_analizer.py`.
 
-Przykład pliku konfiguracyjnego definiującego serwis analizujący logi generowane przez urządzenia Cisco:
-
+#### Przykład pliku konfiguracyjnego:
 ```plaintext
-# Example configuration content here
-# Replace with real configuration if available
+# Tu można dodać przykładowy plik konfiguracyjny
