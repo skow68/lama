@@ -54,6 +54,6 @@ Restart=on-failure
 Environment=PYTHONUNBUFFERED=1
 [Install]
 WantedBy=multi-user.target
-
+```
 ##Schemat działania systemu
 ![Alt Text](schema.jpg)
