@@ -38,19 +38,24 @@ Powiadaminaiem administratorów o wykrytych anomaliach w logach zajmuje się skr
 - Mechanizm 3
 
 ### Trenowanie
-Algorytm wykrywania anomalii jest oparty na nauczaniu maszynowym. Wymagane jest więc wytrenowanie systemu
+Algorytm wykrywania anomalii jest oparty na nauczaniu maszynowym. Wymagane jest więc trenowanie systemu. W przypadku metodologii przyjętej w tej aplikacji, trenowanie polega na informowaniu algorytmu nauczania maszynowego, które logi są normą, nie są anomalią. Za proces trenowania odpowiada skrypt *train*. Skrypt wymaga podania dwów argumentów. Pierwszy to plik z logami, który uznaliśmy za normalne. Drugi argument to wcześniej przyjęty tag oznaczający typ urządzeń, które wyprodukowały obrabiane logi.
 Sekwencja komend:
 ```
 sudo systemctl stop lama_cisco
-./train my_file.txt cisco
+./train file_with_cisco_logs.log cisco
 sudo systemctl start lama_cisco
 ```
 gdzie:
 *lama_cisco* - nazwa serwisu systemd analizującego logi Cisco
-*my_file.txt* - plik z logami, które uznajemy za nie interesujące
+*my_file.txt* - plik z logami urządzeń Cisco, które uznajemy za normę
 
 ###### Strategia dla pierwszej operacji trenowania
-Jak wcześniej wspomniano aplikacja jest przeznaczona dla środowisk, które generują bardzo dużą ilość logów.
+Jak wcześniej wspomniano aplikacja jest przeznaczona dla środowisk, które generują bardzo dużą ilość logów. Zdecydowana większość z nich nie świadczy o awarii. Mogą to być logi świadczące o pewnych niedomaganiach, błędach konfiguracyjnych, błedach w oprogramowaniu, ale nie o awariach. Logi świadczące o awariach zdarzają się stosunkowo rzadko. Pierwsza porcja logów, którymi musimy wytrenować system będzie więc bardzo duża. Jaką strategię powinniśmy przyjąć, aby ten proces był w miarę prosty i jednocześnie skuteczny? Zapewne może być ich wiele. Koncepcja, ktorą ja zastosowałem i która w moim przypadku okazała się skuteczna jest następująca:
+1. Zarchiwizować pliki z logami z całego dnia roboczego (w sensie nie weekend-owego)
+2. Odczekać jeden dzień, w którym oczekujemy na sygnały o podejrzanych zdarzeniach i sami szukamy takich zdarzeń w systemach monitorujących
+3. Jeśli nie pojawiły się sygnały o niepokojących zdarzeniach, wykonać operację pierwszego trenowania używając do tego celu zarchiwizowane wcześniej logi
+
+W następnych dniach zapewne pojawią się alarmy, które okażą się False Positive'ami. Należy wykonywać na nich operację trenowania. Z każdym dniem takich False Positive'ów będzie mniej, aż do ustabilizowania systemu. 
 
 ### Wycofywanie wcześniej nauczonych logów
 
