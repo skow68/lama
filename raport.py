@@ -1,16 +1,12 @@
 import json
 import logging
 import os
-#import subprocess
 import sys
-#import time
 from os.path import dirname
 from drain3 import TemplateMiner
 from drain3.template_miner_config import TemplateMinerConfig
 from drain3.file_persistence import FilePersistence
 import argparse
-#import datetime
-#import re
 from lib.toolkit import remove_datetime
 import configparser
 import hashlib
