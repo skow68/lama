@@ -1,7 +1,8 @@
 ## Funkcjonalność Lama
 
 Lama jest narzędziem służącym do wykrywania nietypowych zdarzeń wykorzystującym metodę nauczania maszynowego. Źródłem informacji są logi urządzeń. Efektem działania jest alarm w postaci maila do administratora.
-Aplikacja jest przeznaczone dla środowisk generujących bardzo dużą ilość logów, niemożliwą do manualnej analizy.
+Aplikacja jest przeznaczona dla środowisk generujących bardzo dużą ilość logów. Na tyle dużą, że ich manualna analiza jest niemożliwa do wykonania.
+Rdzeniem aplikacji jest biblioteka [Drain3]. Realizuje ona zadania związane z uczeniem maszynowym. Polecam zapoznanie się z dokumentacją tej biblioteki.
 
 > Termin "False Positive"  -  w kontekście tej aplikacji termin ten oznacza alarmy, które nie informują o awarii. Przeznaczeniem tej aplikacji jest wyfiltrowanie zdarzeń, które są na prawdę ważne.
 
@@ -32,10 +33,19 @@ Environment=PYTHONUNBUFFERED=1
 WantedBy=multi-user.target
 ```
 ### Alarmowanie
-Powiadaminaiem administratorów o wykrytych anomaliach w logach zajmuje się skrypt _raport.py_. Skrypt powinien być uruchamiany co pewien czas z Crona. Ten czas powinien być odpowiednio krótki. Jedna minuta wydaje się optymalna. Skrypt _raport.py_ zawiera kilka mechanizmów chroniących skrzynkę pocztową administratora przed zalaniem:
-- Mechanizm 1
-- Mechanizm 2
-- Mechanizm 3
+Powiadaminaiem administratorów o wykrytych anomaliach w logach zajmuje się skrypt _raport.py_. Skrypt powinien być uruchamiany co pewien czas z Crona. Ten czas powinien być odpowiednio krótki. Jedna minuta wydaje się optymalna. Mail zawiera log lub kilka logów, które zostały zinterpretowane jako anomalia. Skrypt _raport.py_ zawiera kilka mechanizmów chroniących skrzynkę pocztową administratora przed zalaniem:
+- Ograniczenie wielkości maila do *max_lines* linijek.
+- Maile są wysyłane nie częściej niż raz na minutę
+- Każdy log umieszczony w mailu jest zapamiętywany pomiędzy kolejnymi wykonaniami skryptu. Nawet gdy pojawia się ciągle, to nie jest umieszczany w kolejnych mailach przez 1 godzinę. Jeśli po godzinie okaże się, że pojawia się nadal, to powyższa sekwencja powtarza się.
+
+Z powyższego wynika, że nie wszystkie logi są umieszczane w mailach. Ale też nie takie jest zadanie tych maili. Ich celem jest powiadamianie o nietypowych zdarzeniach. Szczegółowa naliza logów powinna być wykonywana za pomocą narzędzi do tego wyspecjalizowanych.
+
+>Uwaga: Istnieje jeden przypadek, w którym skrzynka pocztowa będzie ochroniona tylko przez dwa pierwsze mechanizmy. Mianowicie jeśli urządzenie zacznie wysyłać w dużej ilości logi spełniające dwa warunki:
+> -zawierają jakiś element zmienny np. identyfikator procesu, który zmienia się w każdym logu
+> -są anomalią
+> Czyli w konsekwencji co jedną minutę będą wysyłane maile aż do momentu rozwiązania problemu.
+
+
 
 ### Trenowanie
 Algorytm wykrywania anomalii jest oparty na nauczaniu maszynowym. Wymagane jest więc trenowanie systemu. W przypadku metodologii przyjętej w tej aplikacji, trenowanie polega na informowaniu algorytmu nauczania maszynowego, które logi są normą, nie są anomalią. Za proces trenowania odpowiada skrypt *train*. Skrypt wymaga podania dwów argumentów. Pierwszy to plik z logami, który uznaliśmy za normalne. Drugi argument to wcześniej przyjęty tag oznaczający typ urządzeń, które wyprodukowały obrabiane logi.
@@ -90,5 +100,13 @@ syslog_dir=/var/log/
 #### Plik drain3.ini
 Plik zawiera parametry definiujące działanie modułu Drain3. Sczegóły są opisane w dokumentacji modułu. W załączonym przykładzie ...
 
+## Krótka instrukcja instalacji
+
+1. 
+
 ## Schemat działania systemu
 ![Alt Text](schema.jpg)
+
+[//]: # (Biblioteka linków)
+
+[Drain3]: <https://github.com/logpai/Drain3>
