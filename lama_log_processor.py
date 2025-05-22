@@ -10,8 +10,6 @@ from sh import tail
 import concurrent.futures
 from lib.toolkit import remove_datetime
 import configparser
-#Script to use by systemd services: lama_cisco, lama_palo, lama_f5
-#Multi thread functionality is incorporated.
 config = configparser.ConfigParser()
 config.read(f"{dirname(__file__)}/config.ini")
 parser = argparse.ArgumentParser()
