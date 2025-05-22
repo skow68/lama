@@ -16,8 +16,8 @@ Każdy producent generuje logi dla swoich urządzeń według pewnego ogólnego s
 
 ### 2.2. Analizator
 Plik z bieżącymi logami (live logs), generowanymi przez serwis syslog, jest wejściem dla procesu analizatora.  
-Analizator pracuje jako serwis Linux, którego plikiem wykonywalnym jest skrypt `lama_log_analizer.py`. Parametrem skryptu powien być tag producenta. Czyli dla przykładu jeśli chcemy analizować logi 3 producentów, to pottrzebujemy utworzyć 3 serwisy.
- Przykład pliku konfiguracyjnego dla logów z urządzeń Cisco:
+Analizator pracuje jako serwis Linux, którego plikiem wykonywalnym jest skrypt `lama_log_analizer.py`. Parametrem skryptu jest przyjęty wcześniej _tag_ oznaczający typ urządzenia (producenta). Jeśli chcemy na przykład analizować logi 3 producentów, to potrzebujemy utworzyć 3 serwisy.
+ Przykład pliku konfiguracyjnego dla serwisu analizującego logi z urządzeń Cisco:
 ```
 [Unit]
 Description=Lama Log Processor Service
@@ -38,12 +38,12 @@ Powiadaminaiem administratorów o wykrytych anomaliach w logach zajmuje się skr
 - Maile są wysyłane nie częściej niż raz na minutę
 - Każdy log umieszczony w mailu jest zapamiętywany pomiędzy kolejnymi wykonaniami skryptu. Nawet gdy pojawia się ciągle, to nie jest umieszczany w kolejnych mailach przez 1 godzinę. Jeśli po godzinie okaże się, że pojawia się nadal, to powyższa sekwencja powtarza się.
 
-Z powyższego wynika, że nie wszystkie logi są umieszczane w mailach. Ale też nie takie jest zadanie tych maili. Ich celem jest powiadamianie o nietypowych zdarzeniach. Szczegółowa naliza logów powinna być wykonywana za pomocą narzędzi do tego wyspecjalizowanych.
+Z powyższego wynika, że nie wszystkie logi są umieszczane w mailach. Ale też nie takie jest zadanie tych powiadomień. Ich celem jest alarmowanie o nietypowych zdarzeniach. Szczegółowa analiza logów powinna być wykonywana za pomocą narzędzi do tego wyspecjalizowanych.
 
->Uwaga: Istnieje przypadek, w którym skrzynka pocztowa będzie ochroniona tylko przez dwa pierwsze mechanizmy. Mianowicie jeśli urządzenie zacznie wysyłać w dużej ilości logi spełniające dwa warunki:
+>Uwaga: Istnieje przypadek, w którym skrzynka pocztowa będzie ochroniona tylko przez dwa pierwsze mechanizmy. Mianowicie jeśli urządzenie zacznie wysyłać w dużej ilości logi spełniające następujące warunki:
 > 1.Zawierają jakiś element zmienny np. identyfikator procesu, który zmienia się w każdym logu
 > 2.Stanowią anomalię
-> Czyli w konsekwencji co jedną minutę będą wysyłane maile aż do momentu rozwiązania problemu.
+> W konsekwencji co jedną minutę będą wysyłane maile aż do momentu rozwiązania problemu.
 
 ### 2.4. Trenowanie
 Algorytm wykrywania anomalii jest oparty na nauczaniu maszynowym. Wymagane jest więc trenowanie systemu. W przypadku metodologii przyjętej w tej aplikacji, trenowanie polega na informowaniu algorytmu nauczania maszynowego, które logi są normą, nie są anomalią. Za proces trenowania odpowiada skrypt *train*. Skrypt wymaga podania dwów argumentów. Pierwszy to plik z logami, który uznaliśmy za normalne. Drugi argument to wcześniej przyjęty tag oznaczający typ urządzeń, które wyprodukowały obrabiane logi.
@@ -67,18 +67,28 @@ Jak wcześniej wspomniano aplikacja jest przeznaczona dla środowisk, które gen
 W następnych dniach zapewne pojawią się alarmy, które okażą się False Positive'ami. Należy wykonywać na nich operację trenowania. Z każdym dniem takich False Positive'ów będzie mniej, aż do ustabilizowania systemu. 
 
 ### 2.4. Wycofywanie wcześniej wytrenowanych logów
+Algorytm Drain3 nie przewiduje wycofywania wcześniej wytrenowanych informacji. Aby uzyskać taką funkcjonalność aplikacja odkłada na boku logi, które zostały poddane procesowi treningu. Zapisywana jest przy tym kolejność w jakiej te logi zostały wytrenowane oraz odpowiadające im stany uczenia maszynowego.  Mając takie informacje można przeprowadzić powrót do stanu sprzed trenowania problematycznego logu. Operację taką wykonuje skrypt *revert*.
+```
+./revert.py <tag> "<text_to_find>"
+```
+gdzie:
+*tag* - etykieta przyjęta dla danego typu urządzeń,
+*text_to_find* - fragment logu, którego chcemy się pozbyć; powinien być na tyle długi i specyficzny, aby możliwe było precyzyjne wyszukanie dokładniego tego logu, o który nam chodzi.
 
 ### 2.5. Archiwizacja
-
+Wiedza na temat wyuczonych przez ML wzorców zachowywana jest w plikach _drain3\_state\_<tag>_.bin. Pliki te stanowią dużą wartość, ponieważ ich utrata lub uszkodzenie powoduje utratę całej wiedzy zebranej w trakcie nauki. Skrypt _lamarchive_ wykonuje archiwizację plików *.bin w katalogu wyspecyfikowanym w _config.ini_ jako wartość zmiennej _arch\_dir_. Liczbę utrzymywanych kopii ustawiamy w  _max\_copies_. Skrypt może być uruchamiany przez serwis _Cron_ np.
+```
+0 2 * * 1-5 lamauser /opt/lama/lamarchive
+```
 ## 3. Konfiguracja systemu
 #### 3.1. Plik config.ini
 ```
 [persistance]
 persistance_dir=/var/lama/
-arch_dir=/var/lama/arch/
 hash_dir=/var/lama/arch/hashes/
 file_list=/var/lama/archlist
 trained_dir=/var/lama/trained/
+arch_dir=/var/lama/arch/
 max_copies=30
  
 [files]
