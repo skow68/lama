@@ -75,8 +75,8 @@ gdzie:
 *tag* - etykieta przyjęta dla danego typu urządzeń,
 *text_to_find* - fragment logu, którego chcemy się pozbyć; powinien być na tyle długi i specyficzny, aby możliwe było precyzyjne wyszukanie dokładniego tego logu, o który nam chodzi.
 
-### 2.5. Archiwizacja
-Wiedza na temat wyuczonych przez ML wzorców zachowywana jest w plikach _drain3\_state\_<tag>_.bin. Pliki te stanowią dużą wartość, ponieważ ich utrata lub uszkodzenie powoduje utratę całej wiedzy zebranej w trakcie nauki. Skrypt _lamarchive_ wykonuje archiwizację plików *.bin w katalogu wyspecyfikowanym w _config.ini_ jako wartość zmiennej _arch\_dir_. Liczbę utrzymywanych kopii ustawiamy w  _max\_copies_. Skrypt może być uruchamiany przez serwis _Cron_ np.
+### 2.5. Pamięć modelu
+Wiedza na temat wyuczonych przez nauczanie maszynowe wzorców zachowywana jest w plikach _drain3\_state\_<tag>_.bin. Jest to swego rodzaju pamięć pamięć tego co model sięnauczył. Pliki te stanowią dużą wartość, ponieważ ich utrata lub uszkodzenie powoduje utratę całej wiedzy zebranej w trakcie nauki. Skrypt _lamarchive_ wykonuje archiwizację plików *.bin w katalogu wyspecyfikowanym w _config.ini_ jako wartość zmiennej _arch\_dir_. Liczbę utrzymywanych kopii ustawiamy w  _max\_copies_. Skrypt może być uruchamiany przez serwis _Cron_ np.
 ```
 0 2 * * 1-5 lamauser /opt/lama/lamarchive
 ```
@@ -109,17 +109,16 @@ max_lines=100
 syslog_dir=/var/log/
 ```
 #### 3.2. Plik drain3.ini
-Plik zawiera parametry definiujące działanie modułu Drain3. Sczegóły są opisane w dokumentacji modułu. W załączonym przykładzie ...
+Plik zawiera parametry definiujące działanie modułu Drain3. Sczegóły są opisane w dokumentacji modułu. Szczególnie interesujący jest segment MASKING. Definiuje on reguły maskowania tych fragmentów logów, które często się zmieniają, a przy tym nie są dla nas interesujące. Dzięki temu algorytm generuje mniej False Positive, ponieważ łatwiej jest podjąć decyzję, czy dany fragment ma być parametrem wzorca, czy częścią treści loga. Chodzi tu o maskowanie na etapie uczenia maszynowego, a konkretnie podczas tworzenia sparametryzowanych wzorców. Te wzorce są używane do rozpoznania, czy dany log jest anomalią. Nie jest to natomiast maskowanie treści logów, które przychodzą w alertach. Te są przesyłane z oryginalną treścią. Na przykład jeśli mamy kilka identycznych urządzeń, to dla modelu wykrywania anomalii nie będzie interesujące, dla którego urządzenia zostanie wykryta anomalia. Dlatego możemy zazwyczaj bez ryzyka zamaskować nazwy tych urządzeń. Plik drain3.ini dołączony do repozytorium uwzglęnia urządzenia F5, Cisco i Palo Alto. Należy jednak pamiętać, że w każdym środowisku te reguły będą miały swojąwłasną specyfikę.
 
 ## 4. Krótka instrukcja instalacji
 1. Podziel twoje urządzenia na grupy i nadaj im tagi (np. cisco, paloalto, f5).
 2. Zmodyfikuj config.ini zgodnie z własnymi wymaganiami i utwórz wymienione w nim katalogi.
-2. Skonfiguruj Syslog tak, aby kierował komunikaty syslog do dedykowanych dla każdego typu urządzeń plików. Nazwy plików muszą być zgodne ze schematem _syslog-**tag**.log_
-3. Utwórz serwisy _systemd_ dla każdego typu urządzeń.
-4. Dodaj do Cron-a skrypt _raport.py_
-5. Dodaj do Cron-a skrypt _lamarchive_
-5. Wykonaj pierwszą operację trenowania uczenia maszynowego (skrypt *train*)
-6. 
+3. Skonfiguruj Syslog tak, aby kierował komunikaty syslog do dedykowanych dla każdego typu urządzeń plików. Nazwy plików muszą być zgodne ze schematem _syslog-**tag**.log_
+4. Utwórz serwisy _systemd_ dla każdego typu urządzeń.
+5. Dodaj do Cron-a skrypt _raport.py_
+6. Dodaj do Cron-a skrypt _lamarchive_
+7. Wykonaj pierwszą operację trenowania uczenia maszynowego (skrypt *train*)
 
 ## 5. Schemat działania systemu
 ![Alt Text](schema.jpg)
