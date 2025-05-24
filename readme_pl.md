@@ -15,7 +15,7 @@ Każdy producent stosuje charakterystycny dla siebie schemat formatowania logów
 *Uwaga*: Separacja nie jest obligatoryjna. W mniejszych środowiskach można zastosować jeden plik i jeden tag, np. 'all'.
 
 ### 2.2. Analizator
-Plik z bieżącymi logami stanowi wejście dla analizatora, który działa jako usługa systemowa (systemd). Plikiem wykonywalnym jest skrypt `lama_log_analizer.py`, a parametrem jego wywołania jest tag producenta. Dla każdego producenta należy utworzyć osobną usługę systemd.
+Plik z bieżącymi logami stanowi wejście dla analizatora, który działa jako usługa systemowa (systemd). Plikiem wykonywalnym jest skrypt `log_analizer.py`, a parametrem jego wywołania jest tag producenta. Dla każdego producenta należy utworzyć osobną usługę systemd.
 Przykład konfiguracji usługi _systemd_ dla logów Cisco:
 ```
 [Unit]
