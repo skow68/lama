@@ -32,17 +32,17 @@ Environment=PYTHONUNBUFFERED=1
 WantedBy=multi-user.target
 ```
 ### 2.3. Alarmowanie
-Za powiadamianie administratora odpowiada skrypt `raport.py`, uruchamiany cyklicznie z Crontaba. Częstotliwość uruchomień powinna być odpowiednio duża np. raz na minutę. Skrypt wysyła e-mail z logami zaklasyfikowanymi jako anomalie. Zastosowano kilka mechanizmów ograniczających ilość wysyłanych maili w celu ochrony skrzynki pocztowej :
+Za powiadamianie administratora odpowiada skrypt `raport.py`, uruchamiany cyklicznie z Crontaba. Częstotliwość uruchomień powinna być odpowiednio wysoka np. raz na minutę. Skrypt wysyła e-mail z logami zaklasyfikowanymi jako anomalie. Zastosowano kilka mechanizmów ograniczających ilość wysyłanych maili w celu ochrony skrzynki pocztowej :
 - Limit linii w wiadomości (max_lines)
 - Maile są wysyłane nie częściej niż raz na minutę
 - Logi powtarzające się nie są przesyłane ponownie przez godzinę
 
-Z powyższego wynika, że nie wszystkie logi są umieszczane w mailach. Ale też nie takie jest zadanie tych powiadomień. Ich celem jest alarmowanie o nietypowych zdarzeniach. Szczegółowa analiza logów powinna być wykonywana za pomocą narzędzi do tego wyspecjalizowanych.
+Z powyższego wynika, że nie wszystkie logi są umieszczane w mailach. Nie jest to jednak głównym zadaniem tych powiadomień. Ich celem jest alarmowanie o nietypowych zdarzeniach. Szczegółowa analiza logów powinna być wykonywana za pomocą narzędzi do tego wyspecjalizowanych.
 
 >Uwaga: Skrzynka pocztowa będzie ochroniona tylko przez dwa pierwsze mechanizmy, jeśli urządzenie zacznie wysyłać w dużej ilości logi, które:
 > -- zawierają jakiś element zmienny np. identyfikator procesu, który zmienia się w każdym logu
 > -- stanowią anomalię
-> W konsekwencji maile będą wysyłane aż do momentu uruchomienia skryptu trenującego system. 
+> W takiej sytuacji maile będą wysyłane nieprzerwanie, aż do momentu wytrenowania systemu poprzez dodanie tych logów jako normalne. 
 
 ### 2.4. Trenowanie
 System wymaga trenowania algorytmu uczenia maszynowego poprzez wskazanie logów reprezentujących normalne działanie. Odpowiada za to skrypt `train`, przyjmujący dwa argumenty: plik z logami oraz tag producenta.
@@ -66,17 +66,17 @@ Jak wcześniej wspomniano aplikacja jest przeznaczona dla środowisk, które gen
 Dalsze trenowanie wykonuje się na wykrytych False Positives. Z czasem ich liczba maleje. 
 
 ### 2.4. Wycofywanie wcześniej wytrenowanych logów
-Biblioteka Drain3 nie przewiduje cofania operacji trenowania, dlatego aplikacja przechowuje historię trenowanych logów i stanów modelu. Skrypt `revert.py` umożliwia cofnięcie konkretnego logu: 
+Biblioteka Drain3 nie udostępnia funkcji cofania operacji trenowania. Dlatego aplikacja Lama przechowuje historię trenowanych logów oraz stanów modelu. umożliwia usunięcie konkretnego wzorca logu z nauczonego modelu: 
 ```
 ./revert.py <tag> "<text_to_find>"
 ```
 gdzie:
 *tag* - etykieta przyjęta dla danego typu urządzeń,
-*text_to_find* - fragment logu, którego chcemy się pozbyć; powinien być na tyle długi i specyficzny, aby możliwe było precyzyjne wyszukanie dokładniego tego logu, o który nam chodzi.
+*text_to_find* - fragment logu, którego wzorzec chcemy usunąć z modelu. Powinien być na tyle długi i specyficzny, aby umożliwić precyzyjne wyszukanie konkretnego wzorca logu.
 
 ### 2.5. Pamięć modelu
 Wzorce wyuczone przez model przechowywane są w plikach *drain3_state_<tag>.bin*. Ich utrata oznacza utratę całej zgromadzonej wiedzy. Skrypt `lamarchive` tworzy kopie zapasowe tych plików w katalogu określonym w config.ini.
-Skrypt jest uruchamiany przez serwis _Cron_ np.
+Skrypt ten jest zazwyczaj uruchamiany za pomocą usługi Cron, np.:
 ```
 0 2 * * 1-5 lamauser /opt/lama/lamarchive
 ```
@@ -117,17 +117,17 @@ max_lines=100
 syslog_dir=/var/log/
 ```
 #### 3.2. Plik drain3.ini
-Zawiera konfigurację biblioteki Drain3, w tym reguły maskowania zmiennych fragmentów logów (np. adresy IP, numery seryjne). Ma to kluczowe znaczenie dla redukcji False Positives. Maskowanie jest wykonywane podczas dla procesu nauczania maszynowego. Nie jest to maskowanie treści logów, które przychodzą w alertach.
-Plik dostarczany z repozytorium uwzględnia urządzenia F5, Cisco i Palo Alto. Reguły maskowania należy dostosować do konkretnego środowiska.
+Zawiera konfigurację biblioteki Drain3, w tym reguły maskowania zmiennych fragmentów logów (np. adresów IP, numerów seryjnych, identyfikatorów sesji). Maskowanie ma kluczowe znaczenie dla redukcji liczby fałszywych alarmów (False Positives) poprzez generalizację wzorców logów. Maskowanie jest wykonywane na potrzeby procesu uczenia maszynowego i klasyfikacji, a nie na treści logów wysyłanych w alertach.
+Plik dostarczany z repozytorium zawiera przykładowe reguły dla urządzeń F5, Cisco i Palo Alto. Reguły maskowania należy dostosować do specyfiki własnego środowiska i logów.
 
 ## 4. Krótka instrukcja instalacji
-1. Podziel urządzenia na grupy i nadaj im tagi (np. cisco, paloalto, f5).
-2. Zmodyfikuj `config.ini` i utwórz odpowiednie katalogi.
-3. Skonfiguruj Syslog do zapisywania logów do plików w formacie `syslog-<tag>.log`
-4. Utwórz serwisy _systemd_ dla każdego typu urządzeń.
-5. Dodaj skrypt `raport.py` do Crontaba
-6. Dodaj skrypt `lamarchive` do Crontaba
-7. Wykonaj pierwsze trenowanie przy pomocy skryptu `train`
+1. Podziel urządzenia na grupy według dostawców i nadaj im odpowiednie tagi (np. cisco, paloalto, f5).
+2. Zmodyfikuj plik config.ini i utwórz wskazane w nim katalogi z odpowiednimi uprawnieniami.
+3. Skonfiguruj serwer Syslog do zapisywania logów do plików w formacie syslog-<tag>.log w katalogu określonym w config.ini (syslog_dir).
+4. Utwórz usługi systemd dla każdego zdefiniowanego tagu (dostawcy urządzeń), korzystając z przykładu w sekcji 2.2.
+5. Dodaj skrypt raport.py do zadań cyklicznych (Crontab).
+6. Dodaj skrypt lamarchive do zadań cyklicznych (Crontab).
+7. Wykonaj pierwsze trenowanie systemu przy pomocy skryptu train dla każdego tagu.
 
 ## 5. Schemat działania systemu
 ![Alt Text](schema.jpg)
