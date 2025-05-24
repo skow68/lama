@@ -1,4 +1,4 @@
-## 1. Lama Functionality
+## 1. Functionality
 
 Lama is a tool designed to detect unusual events using machine learning methods. The data source consists of device logs, and the system's output is an alert in the form of an email sent to the administrator. The application is intended for environments generating a very large number of logs, which cannot be analyzed manually. The core of the system is the [Drain3] library, responsible for machine learning operations. It is recommended to consult its documentation.
 
