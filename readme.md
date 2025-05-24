@@ -1,23 +1,22 @@
 ## 1. Funkcjonalność Lama
 
-Lama jest narzędziem służącym do wykrywania nietypowych zdarzeń wykorzystującym metodę nauczania maszynowego. Źródłem informacji są logi urządzeń. Efektem działania jest alarm w postaci maila do administratora.
-Aplikacja jest przeznaczona dla środowisk generujących bardzo dużą ilość logów. Na tyle dużą, że ich manualna analiza jest niemożliwa do wykonania.
-Rdzeniem aplikacji jest biblioteka [Drain3]. Realizuje ona zadania związane z uczeniem maszynowym. Polecam zapoznanie się z dokumentacją tej biblioteki.
+Lama to narzędzie służące do wykrywania nietypowych zdarzeń z wykorzystaniem metod uczenia maszynowego. Źródłem danych są logi urządzeń, a efektem działania systemu jest alarm w postaci wiadomości e-mail wysyłanej do administratora. Aplikacja jest przeznaczona dla środowisk generujących bardzo dużą liczbę logów, których manualna analiza jest niewykonalna. Rdzeniem systemu jest biblioteka [Drain3], odpowiadająca za operacje związane z uczeniem maszynowym. Zalecane jest zapoznanie się z jej dokumentacją.
 
-> Termin "False Positive"  -  w kontekście tej aplikacji termin ten oznacza alarmy, które nie informują o awarii. Przeznaczeniem tej aplikacji jest wyfiltrowanie zdarzeń, które są na prawdę ważne.
+> Termin "False Positive"  -  w kontekście tej aplikacji termin ten oznacza alarmy, które nie informują o rzeczywistej awarii. Celem aplikacji jest odfiltrowanie zdarzeń rzeczywiście istotnych.
 
 ## 2. Elementy aplikacji
 
 ### 2.1. Źródło logów
-Danymi wejściowymi dla aplikacji są pliki z bieżącymi logami. Powinny być one przygotowane przez serwer Syslog, taki jak Syslog-ng, Graylog i wiele innych. Dobrym rozwiązaniem będzie wstępne filtrowanie logów, np. w oparciu o **severity** (poziom ważności). Chodzi o to, aby trafiały do analizy tylko logi na prawdę istotne. Aplikacja zakłada, że dla każdego producenta urządzeń będziemy mieli oddzielne pliki z logami. Każdy z posiadanych przez nas typ urządzeń otrzyma charakterystyczną dla niego etykietę (tag). Na przykład jeśli chcemy analizować logi z urządzeń od trzech producentów Cisco, Palo Alto oraz F5, to możemy przyjąć etykiety 'cisco', 'palo', 'f5'. Te etykiet będą przewijać się w wielu miejscach konfiguracji. Natomiast jeśli chodzi o nazwy źródeł logów, czyli nazwy plików syslog'a, to powinny zgodne ze schematem _syslog-**tag**.log_ np. syslog-cisco.log.
-###### Dlaczego warto separować logi w zależności od producenta urządzenia?
-Każdy producent generuje logi dla swoich urządzeń według pewnego ogólnego schematu. Dzięki temu proces uczenia przebiega sprawniej. Generowana jest również mniejsza ilość False Positive.
-*Uwaga*: Separacja logów nie jest bezwzględnie konieczna i być może w waszym środowisku nie będzie miała dużego znaczenia. Jeśli chcemy ograniczyć działanie aplikacji do jednego pliku, który zawiera logi wszystkich urządzeń, to możemy przyjąć jedną etykietę np. 'all'.
+Danymi wejściowymi są pliki z bieżącymi logami przygotowanymi przez serwer Syslog (np. Syslog-ng, Graylog). Wskazane jest wstępne filtrowanie logów, np. według poziomu istotności (severity), aby analizie poddawane były wyłącznie logi ważne.
+ Aplikacja zakłada istnienie oddzielnych plików logów dla każdego producenta urządzeń. Każdy typ urządzeń otrzymuje unikalną etykietę (tag), np. 'cisco', 'palo', 'f5'. Te etykiety wykorzystywane są w konfiguracji i nazewnictwie plików. Nazwy plików z logami powinny być zgodne zgodnie ze schematem: `syslog-<tag>.log` np. syslog-cisco.log.
+ 
+###### Dlaczego warto separować logi według producenta?
+Każdy producent stosuje charakterystycny dla siebie schemat formatowania logów. Ich procesowanie w oddzielnych wątkach ułatwia proces uczenia i zmniejsza liczbę False Positives.
+*Uwaga*: Separacja nie jest obligatoryjna. W mniejszych środowiskach można zastosować jeden plik i jeden tag, np. 'all'.
 
 ### 2.2. Analizator
-Plik z bieżącymi logami (live logs), generowanymi przez serwis syslog, jest wejściem dla procesu analizatora.  
-Analizator pracuje jako serwis Linux, którego plikiem wykonywalnym jest skrypt `lama_log_analizer.py`. Parametrem skryptu jest przyjęty wcześniej _tag_ oznaczający typ urządzenia (producenta). Jeśli chcemy na przykład analizować logi 3 producentów, to potrzebujemy utworzyć 3 serwisy.
- Przykład pliku konfiguracyjnego dla serwisu analizującego logi z urządzeń Cisco:
+Plik z bieżącymi logami stanowi wejście dla analizatora, który działa jako usługa systemowa (systemd). Plikiem wykonywalnym jest skrypt `lama_log_analizer.py`, a parametrem jego wywołania jest tag producenta. Dla każdego producenta należy utworzyć osobną usługę systemd.
+Przykład konfiguracji usługi _systemd_ dla logów Cisco:
 ```
 [Unit]
 Description=Lama Log Processor Service
@@ -33,20 +32,20 @@ Environment=PYTHONUNBUFFERED=1
 WantedBy=multi-user.target
 ```
 ### 2.3. Alarmowanie
-Powiadaminaiem administratorów o wykrytych anomaliach w logach zajmuje się skrypt _raport.py_. Skrypt powinien być uruchamiany co pewien czas z Crona. Ten czas powinien być odpowiednio krótki. Jedna minuta wydaje się optymalna. Mail zawiera log lub kilka logów, które zostały zinterpretowane jako anomalia. Skrypt _raport.py_ zawiera kilka mechanizmów chroniących skrzynkę pocztową administratora przed zalaniem:
-- Ograniczenie wielkości maila do *max_lines* linijek.
+Za powiadamianie administratora odpowiada skrypt `raport.py`, uruchamiany cyklicznie z Crontaba. Częstotliwość uruchomień powinna być odpowiednio duża np. raz na minutę. Skrypt wysyła e-mail z logami zaklasyfikowanymi jako anomalie. Zastosowano kilka mechanizmów ograniczających ilość wysyłanych maili w celu ochrony skrzynki pocztowej :
+- Limit linii w wiadomości (max_lines)
 - Maile są wysyłane nie częściej niż raz na minutę
-- Każdy log umieszczony w mailu jest zapamiętywany pomiędzy kolejnymi wykonaniami skryptu. Nawet gdy pojawia się ciągle, to nie jest umieszczany w kolejnych mailach przez 1 godzinę. Jeśli po godzinie okaże się, że pojawia się nadal, to powyższa sekwencja powtarza się.
+- Logi powtarzające się nie są przesyłane ponownie przez godzinę
 
 Z powyższego wynika, że nie wszystkie logi są umieszczane w mailach. Ale też nie takie jest zadanie tych powiadomień. Ich celem jest alarmowanie o nietypowych zdarzeniach. Szczegółowa analiza logów powinna być wykonywana za pomocą narzędzi do tego wyspecjalizowanych.
 
->Uwaga: Istnieje przypadek, w którym skrzynka pocztowa będzie ochroniona tylko przez dwa pierwsze mechanizmy. Mianowicie jeśli urządzenie zacznie wysyłać w dużej ilości logi spełniające następujące warunki:
-> 1.Zawierają jakiś element zmienny np. identyfikator procesu, który zmienia się w każdym logu
-> 2.Stanowią anomalię
-> W konsekwencji co jedną minutę będą wysyłane maile aż do momentu rozwiązania problemu.
+>Uwaga: Skrzynka pocztowa będzie ochroniona tylko przez dwa pierwsze mechanizmy, jeśli urządzenie zacznie wysyłać w dużej ilości logi, które:
+> -- zawierają jakiś element zmienny np. identyfikator procesu, który zmienia się w każdym logu
+> -- stanowią anomalię
+> W konsekwencji maile będą wysyłane aż do momentu uruchomienia skryptu trenującego system. 
 
 ### 2.4. Trenowanie
-Algorytm wykrywania anomalii jest oparty na nauczaniu maszynowym. Wymagane jest więc trenowanie systemu. W przypadku metodologii przyjętej w tej aplikacji, trenowanie polega na informowaniu algorytmu nauczania maszynowego, które logi są normą, nie są anomalią. Za proces trenowania odpowiada skrypt *train*. Skrypt wymaga podania dwów argumentów. Pierwszy to plik z logami, który uznaliśmy za normalne. Drugi argument to wcześniej przyjęty tag oznaczający typ urządzeń, które wyprodukowały obrabiane logi.
+System wymaga trenowania algorytmu uczenia maszynowego poprzez wskazanie logów reprezentujących normalne działanie. Odpowiada za to skrypt `train`, przyjmujący dwa argumenty: plik z logami oraz tag producenta.
 Sekwencja komend:
 ```
 sudo systemctl <stop systemd_service_name>
@@ -54,20 +53,20 @@ sudo systemctl <stop systemd_service_name>
 sudo systemctl start <systemd_service_name>
 ```
 gdzie:
-*systemd_service_name* - nazwa serwisu *systemd* analizującego logi danego typu urządzeń
-*file_with_logs* - plik z logami urządzeń Cisco, które uznajemy za normę
-*tag* - etykieta przyjęta dla danego typu urządzeń
+*systemd_service_name* - nazwa serwisu *systemd* analizującego logi danego producenta
+*file_with_logs* - plik z logami, które uznaliśmy za nieinteresujące
+*tag* - etykieta przyjęta dla danego producenta
 
-###### Strategia dla pierwszej operacji trenowania
-Jak wcześniej wspomniano aplikacja jest przeznaczona dla środowisk, które generują bardzo dużą ilość logów. Zdecydowana większość z nich nie świadczy o awarii. Mogą to być logi świadczące o pewnych niedomaganiach, błędach konfiguracyjnych, błedach w oprogramowaniu, ale nie o awariach. Logi świadczące o awariach zdarzają się stosunkowo rzadko. Pierwsza porcja logów, którymi musimy wytrenować system będzie więc bardzo duża. Jaką strategię powinniśmy przyjąć, aby ten proces był w miarę prosty i jednocześnie skuteczny? Zapewne może być ich wiele. Koncepcja, ktorą ja zastosowałem i która w moim przypadku okazała się skuteczna jest następująca:
-1. Zarchiwizować pliki z logami z całego dnia roboczego (w sensie nie weekend-owego)
-2. Odczekać jeden dzień, w którym oczekujemy na sygnały o podejrzanych zdarzeniach i sami szukamy takich zdarzeń w systemach monitorujących
-3. Jeśli nie pojawiły się sygnały o niepokojących zdarzeniach, wykonać operację pierwszego trenowania używając do tego celu zarchiwizowane wcześniej logi
+###### Strategia pierwszego trenowania
+Jak wcześniej wspomniano aplikacja jest przeznaczona dla środowisk, które generują bardzo dużą ilość logów. Zdecydowana większość z nich nie świadczy o awarii. Dlatego pierwsza porcja logów, którymi musimy wytrenować system będzie stosunkowo duża. Ważne jest, aby nie zawierała logów świadczących o awarii. Jedną z metod, aby osiągnąćten cel jest:
+1. Zarchiwizowanie logów z dnia roboczego
+2. Odczekanie jednego dnia w celu identyfikacji potencjalnych zdarzeniach, które moglibyśmy uznać za awarie.
+3. Jeśli nie wykryto problemów, użycie logów do pierwszego trenowania.
 
-W następnych dniach zapewne pojawią się alarmy, które okażą się False Positive'ami. Należy wykonywać na nich operację trenowania. Z każdym dniem takich False Positive'ów będzie mniej, aż do ustabilizowania systemu. 
+Dalsze trenowanie wykonuje się na wykrytych False Positives. Z czasem ich liczba maleje. 
 
 ### 2.4. Wycofywanie wcześniej wytrenowanych logów
-Algorytm Drain3 nie przewiduje wycofywania wcześniej wytrenowanych informacji. Aby uzyskać taką funkcjonalność aplikacja odkłada na boku logi, które zostały poddane procesowi treningu. Zapisywana jest przy tym kolejność w jakiej te logi zostały wytrenowane oraz odpowiadające im stany uczenia maszynowego.  Mając takie informacje można przeprowadzić powrót do stanu sprzed trenowania problematycznego logu. Operację taką wykonuje skrypt *revert*.
+Biblioteka Drain3 nie przewiduje cofania operacji trenowania, dlatego aplikacja przechowuje historię trenowanych logów i stanów modelu. Skrypt `revert.py` umożliwia cofnięcie konkretnego logu: 
 ```
 ./revert.py <tag> "<text_to_find>"
 ```
@@ -76,24 +75,32 @@ gdzie:
 *text_to_find* - fragment logu, którego chcemy się pozbyć; powinien być na tyle długi i specyficzny, aby możliwe było precyzyjne wyszukanie dokładniego tego logu, o który nam chodzi.
 
 ### 2.5. Pamięć modelu
-Wiedza na temat wyuczonych przez nauczanie maszynowe wzorców zachowywana jest w plikach _drain3\_state\_<tag>_.bin. Jest to swego rodzaju pamięć pamięć tego co model sięnauczył. Pliki te stanowią dużą wartość, ponieważ ich utrata lub uszkodzenie powoduje utratę całej wiedzy zebranej w trakcie nauki. Skrypt _lamarchive_ wykonuje archiwizację plików *.bin w katalogu wyspecyfikowanym w _config.ini_ jako wartość zmiennej _arch\_dir_. Liczbę utrzymywanych kopii ustawiamy w  _max\_copies_. Skrypt może być uruchamiany przez serwis _Cron_ np.
+Wzorce wyuczone przez model przechowywane są w plikach *drain3_state_<tag>.bin*. Ich utrata oznacza utratę całej zgromadzonej wiedzy. Skrypt `lamarchive` tworzy kopie zapasowe tych plików w katalogu określonym w config.ini.
+Skrypt jest uruchamiany przez serwis _Cron_ np.
 ```
 0 2 * * 1-5 lamauser /opt/lama/lamarchive
 ```
 ## 3. Konfiguracja systemu
 #### 3.1. Plik config.ini
+Zawiera ścieżki do plików i katalogów oraz ustawienia e-mail i Sysloga. Należy odpowiednio go dostosować do środowiska.
 ```
 [persistance]
+#katalog z plikami pamięci nauczania maszynowego:
 persistance_dir=/var/lama/
 hash_dir=/var/lama/arch/hashes/
 file_list=/var/lama/archlist
 trained_dir=/var/lama/trained/
+#katalog na archiwum dla skryptu lamarchive:
 arch_dir=/var/lama/arch/
+#liczba kopii utrzymywanych przes lamarchive:
 max_copies=30
  
 [files]
+#katalog z logami rozpoznanymi jako anomialia
 alarm_cache=/var/log/lama/
+#zbiorczy plik za cały dzień z logami wysłanymi jako anomalia:
 day_alarm_cache=/var/log/lama/day_alarm_cache.log
+#log aplikacji:
 lama_log=/var/log/lama/lama.log
 shelf_file=/var/lama/hashes.shlv
  
@@ -106,19 +113,21 @@ smtp_port=25
 max_lines=100
  
 [syslog]
+#katalog z logami do analizy
 syslog_dir=/var/log/
 ```
 #### 3.2. Plik drain3.ini
-Plik zawiera parametry definiujące działanie modułu Drain3. Sczegóły są opisane w dokumentacji modułu. Szczególnie interesujący jest segment MASKING. Definiuje on reguły maskowania tych fragmentów logów, które często się zmieniają, a przy tym nie są dla nas interesujące. Dzięki temu algorytm generuje mniej False Positive, ponieważ łatwiej jest podjąć decyzję, czy dany fragment ma być parametrem wzorca, czy częścią treści loga. Chodzi tu o maskowanie na etapie uczenia maszynowego, a konkretnie podczas tworzenia sparametryzowanych wzorców. Te wzorce są używane do rozpoznania, czy dany log jest anomalią. Nie jest to natomiast maskowanie treści logów, które przychodzą w alertach. Te są przesyłane z oryginalną treścią. Na przykład jeśli mamy kilka identycznych urządzeń, to dla modelu wykrywania anomalii nie będzie interesujące, dla którego urządzenia zostanie wykryta anomalia. Dlatego możemy zazwyczaj bez ryzyka zamaskować nazwy tych urządzeń. Plik drain3.ini dołączony do repozytorium uwzglęnia urządzenia F5, Cisco i Palo Alto. Należy jednak pamiętać, że w każdym środowisku te reguły będą miały swojąwłasną specyfikę.
+Zawiera konfigurację biblioteki Drain3, w tym reguły maskowania zmiennych fragmentów logów (np. adresy IP, numery seryjne). Ma to kluczowe znaczenie dla redukcji False Positives. Maskowanie jest wykonywane podczas dla procesu nauczania maszynowego. Nie jest to maskowanie treści logów, które przychodzą w alertach.
+Plik dostarczany z repozytorium uwzględnia urządzenia F5, Cisco i Palo Alto. Reguły maskowania należy dostosować do konkretnego środowiska.
 
 ## 4. Krótka instrukcja instalacji
-1. Podziel twoje urządzenia na grupy i nadaj im tagi (np. cisco, paloalto, f5).
-2. Zmodyfikuj config.ini zgodnie z własnymi wymaganiami i utwórz wymienione w nim katalogi.
-3. Skonfiguruj Syslog tak, aby kierował komunikaty syslog do dedykowanych dla każdego typu urządzeń plików. Nazwy plików muszą być zgodne ze schematem _syslog-**tag**.log_
+1. Podziel urządzenia na grupy i nadaj im tagi (np. cisco, paloalto, f5).
+2. Zmodyfikuj `config.ini` i utwórz odpowiednie katalogi.
+3. Skonfiguruj Syslog do zapisywania logów do plików w formacie `syslog-<tag>.log`
 4. Utwórz serwisy _systemd_ dla każdego typu urządzeń.
-5. Dodaj do Cron-a skrypt _raport.py_
-6. Dodaj do Cron-a skrypt _lamarchive_
-7. Wykonaj pierwszą operację trenowania uczenia maszynowego (skrypt *train*)
+5. Dodaj skrypt `raport.py` do Crontaba
+6. Dodaj skrypt `lamarchive` do Crontaba
+7. Wykonaj pierwsze trenowanie przy pomocy skryptu `train`
 
 ## 5. Schemat działania systemu
 ![Alt Text](schema.jpg)
