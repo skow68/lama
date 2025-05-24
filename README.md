@@ -19,7 +19,7 @@ Each vendor uses a characteristic log formatting scheme. Processing them in sepa
 
 ### 2.2. Analyzer
 
-The current log file is the input for the analyzer, which runs as a systemd service. The executable file is the `lama_log_analizer.py` script, and its invocation parameter is the vendor tag. A separate systemd service should be created for each vendor.
+The current log file is the input for the analyzer, which runs as a systemd service. The executable file is the `log_analizer.py` script, and its invocation parameter is the vendor tag. A separate systemd service should be created for each vendor.
 
 Example systemd service configuration for Cisco logs:
 
